@@ -1,0 +1,85 @@
+<div class="flex h-[calc(100vh-8rem)]">
+  <!-- Chat Sessions Sidebar -->
+  <div class="w-64 bg-white border-r border-gray-200 p-4">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold text-[#233559]">Chat Sessions</h2>
+      <button 
+        (click)="createNewSession()"
+        class="p-2 text-[#c12535] hover:bg-red-50 rounded-full transition-colors"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="space-y-2">
+      @for (session of chatSessions; track session.id) {
+        <button 
+          (click)="loadChatSession(session.id)"
+          class="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
+          [class.bg-gray-50]="session.id === currentSessionId"
+        >
+          <h3 class="font-medium text-[#233559]">{{ session.title }}</h3>
+          <p class="text-sm text-gray-500">{{ session.updatedAt | date:'short' }}</p>
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Chat Area -->
+  <div class="flex-1 flex flex-col">
+    <!-- Messages -->
+    <div class="flex-1 overflow-y-auto p-4 space-y-4">
+      @for (message of messages; track message.timestamp) {
+        <div class="flex" [ngClass]="{'justify-end': message.sender === 'user'}">
+          <div 
+            class="max-w-[70%] rounded-lg p-3"
+            [ngClass]="{
+              'bg-[#c12535] text-white': message.sender === 'assistant',
+              'bg-gray-100 text-[#233559]': message.sender === 'user'
+            }"
+          >
+            <p>{{ message.content }}</p>
+            <span class="text-xs opacity-75 mt-1 block">
+              {{ message.timestamp | date:'shortTime' }}
+            </span>
+          </div>
+        </div>
+      }
+
+      @if (isLoading) {
+        <div class="flex justify-start">
+          <div class="bg-[#c12535] text-white rounded-lg p-3">
+            <div class="flex space-x-2">
+              <div class="w-2 h-2 bg-white rounded-full animate-bounce"></div>
+              <div class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+              <div class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Message Input -->
+    <div class="border-t border-gray-200 p-4">
+      <form (ngSubmit)="sendMessage()" class="flex gap-2">
+        <input 
+          type="text" 
+          [(ngModel)]="newMessage"
+          name="message"
+          placeholder="Type your message..." 
+          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c12535] focus:border-[#c12535]"
+          [disabled]="isLoading"
+        />
+        <button 
+          type="submit"
+          class="bg-[#c12535] text-white px-6 py-2 rounded-lg hover:bg-[#a01e2c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          [disabled]="isLoading || !newMessage.trim()"
+        >
+          Send
+        </button>
+      </form>
+    </div>
+  </div>
+</div> 
