@@ -1,8 +1,11 @@
 export interface Task {
-  id: string;
+  id?: number;
+  user_id?: string;
+  created_at?: string;
+  updated_at?: string;
   title: string;
-  description: string;
-  dueDate: Date;
-  completed: boolean;
+  description?: string;
+  due_date?: string;
+  status: 'todo' | 'completed';
   priority: 'low' | 'medium' | 'high';
 } 

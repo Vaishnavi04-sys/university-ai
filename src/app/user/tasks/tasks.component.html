@@ -3,7 +3,7 @@
     <h1 class="text-2xl font-bold text-[#233559]">My Tasks</h1>
     <div class="flex gap-2">
       <button 
-        *ngFor="let filter of ['all', 'today', 'completed']"
+        *ngFor="let filter of filters"
         (click)="selectedFilter = filter"
         class="px-4 py-2 rounded-lg transition-colors"
         [ngClass]="{
@@ -16,22 +16,57 @@
     </div>
   </div>
 
-  <!-- Add New Task -->
-  <div class="bg-white p-6 rounded-lg shadow-md">
-    <form (ngSubmit)="addTask()" class="flex gap-2">
-      <input 
-        type="text" 
-        [(ngModel)]="newTask"
-        name="task"
-        placeholder="Add a new task..." 
-        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c12535] focus:border-[#c12535]"
-      />
-      <button 
-        type="submit"
-        class="bg-[#c12535] text-white px-6 py-2 rounded-lg hover:bg-[#a01e2c] transition-colors"
-      >
-        Add Task
-      </button>
+  <!-- Add Task Button -->
+  <div class="flex justify-end mb-4">
+    <button 
+      (click)="showAddForm = !showAddForm"
+      class="bg-[#c12535] text-white px-6 py-2 rounded-lg hover:bg-[#a01e2c] transition-colors"
+    >
+      {{ showAddForm ? 'Cancel' : 'Add New Task' }}
+    </button>
+  </div>
+
+  <!-- Add New Task Form -->
+  <div class="bg-white p-6 rounded-lg shadow-md" *ngIf="showAddForm">
+    <form (ngSubmit)="addTask()" class="space-y-4">
+      <div class="flex gap-2">
+        <input 
+          type="text" 
+          [(ngModel)]="newTask.title"
+          name="title"
+          placeholder="Task title..." 
+          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c12535] focus:border-[#c12535]"
+        />
+        <input 
+          type="date" 
+          [(ngModel)]="newTask.due_date"
+          name="due_date"
+          class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c12535] focus:border-[#c12535]"
+        />
+        <select 
+          [(ngModel)]="newTask.priority"
+          name="priority"
+          class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c12535] focus:border-[#c12535]"
+        >
+          <option value="low">Low Priority</option>
+          <option value="medium">Medium Priority</option>
+          <option value="high">High Priority</option>
+        </select>
+      </div>
+      <textarea 
+        [(ngModel)]="newTask.description"
+        name="description"
+        placeholder="Task description..."
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c12535] focus:border-[#c12535] min-h-[100px]"
+      ></textarea>
+      <div class="flex justify-end">
+        <button 
+          type="submit"
+          class="bg-[#c12535] text-white px-6 py-2 rounded-lg hover:bg-[#a01e2c] transition-colors"
+        >
+          Add Task
+        </button>
+      </div>
     </form>
   </div>
 
@@ -43,16 +78,16 @@
           <div class="flex items-start gap-4">
             <input 
               type="checkbox" 
-              [checked]="task.completed"
-              (change)="toggleTask(task)"
+              [checked]="task.status === 'completed'"
+              (change)="toggleStatus(task)"
               class="mt-1 h-5 w-5 text-[#c12535] border-gray-300 rounded focus:ring-[#c12535]"
             />
             <div>
               <h3 
                 class="text-lg font-medium"
                 [ngClass]="{
-                  'text-[#233559]': !task.completed,
-                  'text-gray-400 line-through': task.completed
+                  'text-[#233559]': task.status === 'todo',
+                  'text-gray-400 line-through': task.status === 'completed'
                 }"
               >
                 {{ task.title }}
@@ -62,7 +97,7 @@
               }
               <div class="flex items-center gap-4 mt-2">
                 <span class="text-sm text-gray-500">
-                  Due: {{ task.dueDate | date:'mediumDate' }}
+                  Due: {{ task.due_date | date:'mediumDate' }}
                 </span>
                 <span 
                   class="px-2 py-1 text-xs rounded-full"
@@ -78,7 +113,7 @@
             </div>
           </div>
           <button 
-            (click)="deleteTask(task.id)"
+            (click)="deleteTask(task.id!)"
             class="text-gray-400 hover:text-[#c12535] transition-colors"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

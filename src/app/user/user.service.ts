@@ -62,4 +62,25 @@ export class UserAPIService {
     updateSessionTitle(sessionId: number, title: string): Observable<any> {
         return this.httpClient.patch(this.apiUrl + `university/chat/sessions/${sessionId}/`, { name: title });
     }
+
+    // Task related functions
+    getTasks(): Observable<any> {
+        return this.httpClient.get(this.apiUrl + 'university/tasks/');
+    }
+
+    getTaskById(taskId: number): Observable<any> {
+        return this.httpClient.get(this.apiUrl + `university/tasks/${taskId}/`);
+    }
+
+    createTask(taskData: any): Observable<any> {
+        return this.httpClient.post(this.apiUrl + 'university/tasks/', taskData);
+    }
+
+    updateTask(taskId: number, taskData: any): Observable<any> {
+        return this.httpClient.patch(this.apiUrl + `university/tasks/${taskId}/`, taskData);
+    }
+
+    deleteTask(taskId: number): Observable<any> {
+        return this.httpClient.delete(this.apiUrl + `university/tasks/${taskId}/`);
+    }
 }
