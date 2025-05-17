@@ -1,8 +1,9 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpClientModule } from '@angular/common/http';
+import { HttpClientModule } from '@angular/common/http';
 import { ChatMessage, ChatSession } from './chat.interface';
+import { UserAPIService } from '../user.service';
 
 @Component({
   selector: 'app-chat',
@@ -11,46 +12,71 @@ import { ChatMessage, ChatSession } from './chat.interface';
   templateUrl: './chat.component.html',
   styleUrls: ['./chat.component.css']
 })
-export class ChatComponent implements OnInit {
+export class ChatComponent implements OnInit, AfterViewChecked {
+  @ViewChild('messageContainer') private messageContainer!: ElementRef;
   messages: ChatMessage[] = [];
   newMessage: string = '';
   chatSessions: ChatSession[] = [];
   currentSessionId: string | null = null;
+  currentSessionDetailId: number | null = null;
+  currentSession: ChatSession | null = null;
   isLoading: boolean = false;
+  editingTitle: boolean = false;
+  editedTitle: string = '';
+  private shouldScrollToBottom: boolean = false;
 
-  constructor(private http: HttpClient) {}
+  constructor(private userService: UserAPIService) {}
 
   ngOnInit() {
     this.loadChatSessions();
-    this.createNewSession();
+  }
+
+  ngAfterViewChecked() {
+    if (this.shouldScrollToBottom) {
+      this.scrollToBottom();
+      this.shouldScrollToBottom = false;
+    }
+  }
+
+  private scrollToBottom(): void {
+    try {
+      const element = this.messageContainer.nativeElement;
+      element.scrollTop = element.scrollHeight;
+    } catch (err) {
+      console.error('Error scrolling to bottom:', err);
+    }
   }
 
   private loadChatSessions() {
-    // TODO: Implement API call to load chat sessions
-    this.chatSessions = [
-      {
-        id: '1',
-        title: 'General Questions',
-        messages: [],
-        createdAt: new Date(),
-        updatedAt: new Date()
+    this.userService.getSessionsList().subscribe({
+      next: (sessions) => {
+        this.chatSessions = sessions.map((session: any) => ({
+          detail_id: session.id,
+          id: session.session_id,
+          title: session.name,
+          messages: [],
+          createdAt: new Date(session.created_at),
+          updatedAt: new Date(session.updated_at)
+        }));
+        
+        if (this.chatSessions.length > 0) {
+          this.loadChatSession(this.chatSessions[0]?.detail_id);
+        } else {
+          this.createNewSession();
+        }
+      },
+      error: (error) => {
+        console.error('Error loading sessions:', error);
       }
-    ];
+    });
   }
 
   createNewSession() {
-    const newSession: ChatSession = {
-      id: Date.now().toString(),
-      title: 'New Chat',
-      messages: [],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    this.chatSessions.push(newSession);
-    this.currentSessionId = newSession.id;
+    this.currentSessionId = null;
+    this.currentSessionDetailId = null;
+    this.currentSession = null;
     this.messages = [];
     
-    // Add welcome message
     this.messages.push({
       content: 'Hello! I\'m your AI assistant. How can I help you today?',
       sender: 'assistant',
@@ -58,16 +84,66 @@ export class ChatComponent implements OnInit {
     });
   }
 
-  loadChatSession(sessionId: string) {
-    this.currentSessionId = sessionId;
-    const session = this.chatSessions.find(s => s.id === sessionId);
-    if (session) {
-      this.messages = session.messages;
+  loadChatSession(sessionId: number) {
+    this.currentSessionDetailId = sessionId;
+    this.userService.getSessionDetail(sessionId).subscribe({
+      next: (session) => {
+        this.currentSessionId = session.session_id;
+        this.currentSession = {
+          detail_id: session.id,
+          id: session.session_id,
+          title: session.name,
+          messages: [],
+          createdAt: new Date(session.created_at),
+          updatedAt: new Date(session.updated_at)
+        };
+        this.messages = session.messages.map((msg: any) => ({
+          content: msg.content,
+          sender: msg.role,
+          timestamp: new Date(msg.created_at)
+        }));
+        this.shouldScrollToBottom = true;
+      },
+      error: (error) => {
+        console.error('Error loading session:', error);
+      }
+    });
+  }
+
+  startEditingTitle() {
+    if (this.currentSession) {
+      this.editedTitle = this.currentSession.title;
+      this.editingTitle = true;
     }
   }
 
+  saveTitle() {
+    if (this.currentSessionDetailId && this.editedTitle.trim()) {
+      this.userService.updateSessionTitle(this.currentSessionDetailId, this.editedTitle.trim()).subscribe({
+        next: () => {
+          if (this.currentSession) {
+            this.currentSession.title = this.editedTitle.trim();
+          }
+          const sessionIndex = this.chatSessions.findIndex(s => s.detail_id === this.currentSessionDetailId);
+          if (sessionIndex !== -1) {
+            this.chatSessions[sessionIndex].title = this.editedTitle.trim();
+          }
+          this.editingTitle = false;
+        },
+        error: (error) => {
+          console.error('Error updating title:', error);
+        }
+      });
+    }
+  }
+
+  cancelEditingTitle() {
+    this.editingTitle = false;
+    this.editedTitle = '';
+  }
+
   async sendMessage() {
-    if (!this.newMessage.trim() || !this.currentSessionId) return;
+    if (!this.newMessage.trim()) return;
 
     const userMessage: ChatMessage = {
       content: this.newMessage,
@@ -76,28 +152,39 @@ export class ChatComponent implements OnInit {
     };
 
     this.messages.push(userMessage);
+    this.shouldScrollToBottom = true;
     this.isLoading = true;
 
     try {
-      const response = await this.http.post('http://localhost:3000/api/chat', {
-        message: this.newMessage,
-        sessionId: this.currentSessionId
-      }).toPromise();
+      const response = await this.userService.sendMessage(this.newMessage, this.currentSessionId || undefined).toPromise();
+      
+      // Update current session ID if it's a new session
+      if (!this.currentSessionId) {
+        this.currentSessionId = response.session_id;
+        this.currentSessionDetailId = response.id;
+        this.currentSession = {
+          detail_id: response.id,
+          id: response.session_id,
+          title: response.name,
+          messages: [],
+          createdAt: new Date(response.created_at),
+          updatedAt: new Date(response.updated_at)
+        };
+      }
 
+      // Add assistant's response
+      const lastMessage = response.messages[response.messages.length - 1];
       const assistantMessage: ChatMessage = {
-        content: response as string,
-        sender: 'assistant',
-        timestamp: new Date()
+        content: lastMessage.content,
+        sender: lastMessage.role,
+        timestamp: new Date(lastMessage.created_at)
       };
 
       this.messages.push(assistantMessage);
+      this.shouldScrollToBottom = true;
 
-      // Update session in the list
-      const sessionIndex = this.chatSessions.findIndex(s => s.id === this.currentSessionId);
-      if (sessionIndex !== -1) {
-        this.chatSessions[sessionIndex].messages = [...this.messages];
-        this.chatSessions[sessionIndex].updatedAt = new Date();
-      }
+      // Refresh sessions list
+      this.loadChatSessions();
     } catch (error) {
       console.error('Error sending message:', error);
       this.messages.push({
@@ -105,6 +192,7 @@ export class ChatComponent implements OnInit {
         sender: 'assistant',
         timestamp: new Date()
       });
+      this.shouldScrollToBottom = true;
     } finally {
       this.isLoading = false;
       this.newMessage = '';

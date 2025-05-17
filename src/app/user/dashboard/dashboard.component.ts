@@ -1,14 +1,10 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { UserAPIService } from '../user.service';
+import { Subscription } from 'rxjs';
+import { RegisterComponent } from '../../authenticator/register/register.component';
 
-interface UserDetails {
-  name: string;
-  email: string;
-  role: string;
-  department: string;
-  enrollmentNumber: string;
-}
 
 @Component({
   selector: 'app-dashboard',
@@ -17,10 +13,14 @@ interface UserDetails {
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
-export class DashboardComponent implements OnInit {
-  userDetails: UserDetails | null = null;
+export class DashboardComponent implements OnInit, OnDestroy {
+  userDetails: any | null = null;
   greeting: string = '';
-  userName: string = 'John Doe'; // This should come from your auth service
+  userName: string = '';
+  firstName: string = '';
+  lastName: string = '';
+  userEnrollmentInfo: any = null;
+  private subscription: Subscription = new Subscription();
 
   private morningGreetings = [
     'Rise and shine',
@@ -46,22 +46,38 @@ export class DashboardComponent implements OnInit {
     'Hello, night owl'
   ];
 
-  constructor() {}
+  constructor(public userAPIService: UserAPIService) {}
 
   ngOnInit() {
-    this.fetchUserDetails();
     this.updateGreeting();
+    this.subscription = this.userAPIService.currentUserData$.subscribe(data => {
+      if (data) {
+        this.fetchUserDetails(data);
+      }
+    });
   }
 
-  private fetchUserDetails() {
-    // Simulated API call - replace with actual API endpoint
+  ngOnDestroy() {
+    this.subscription.unsubscribe();
+  }
+
+  private fetchUserDetails(userData: any) {
+    console.log('User data received:', userData);
     this.userDetails = {
-      name: 'John Doe',
-      email: 'john.doe@university.edu',
-      role: 'Student',
-      department: 'Computer Science',
-      enrollmentNumber: 'CS2024001'
+      name: userData.username,
+      first_name: userData.first_name || 'Not specified',
+      last_name: userData.last_name || '',
+      email: userData.email,
+      role: userData.role || 'Student',
+      enrollmentNumber: userData.username || 'Not specified',
     };
+    this.userName = userData.username;
+    this.firstName = userData.first_name;
+    this.lastName = userData.last_name;
+    // Parse enrollment info
+    console.log('Attempting to parse username:', userData.username);
+    this.userEnrollmentInfo = RegisterComponent.parseEnrollmentNumber(userData.username);
+    console.log('Parsed enrollment info:', this.userEnrollmentInfo);
   }
 
   private updateGreeting() {

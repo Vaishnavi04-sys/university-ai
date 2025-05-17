@@ -1,85 +1,68 @@
-<div class="flex h-[calc(100vh-8rem)]">
-  <!-- Chat Sessions Sidebar -->
-  <div class="w-64 bg-white border-r border-gray-200 p-4">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-lg font-semibold text-[#233559]">Chat Sessions</h2>
-      <button 
-        (click)="createNewSession()"
-        class="p-2 text-[#c12535] hover:bg-red-50 rounded-full transition-colors"
-      >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-      </button>
+<div class="chat-container">
+  <div class="chat-sidebar">
+    <div class="sidebar-header">
+      <h2>Chat Sessions</h2>
+      <button class="new-chat-btn" (click)="createNewSession()">New Chat</button>
     </div>
-
-    <div class="space-y-2">
-      @for (session of chatSessions; track session.id) {
-        <button 
-          (click)="loadChatSession(session.id)"
-          class="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors"
-          [class.bg-gray-50]="session.id === currentSessionId"
-        >
-          <h3 class="font-medium text-[#233559]">{{ session.title }}</h3>
-          <p class="text-sm text-gray-500">{{ session.updatedAt | date:'short' }}</p>
-        </button>
-      }
+    <div class="sessions-list">
+      <div *ngFor="let session of chatSessions" 
+           class="session-item" 
+           [class.active]="session.detail_id === currentSessionDetailId"
+           (click)="loadChatSession(session.detail_id)">
+        <div class="session-title">{{ session.title }}</div>
+        <div class="session-date">{{ session.updatedAt | date:'short' }}</div>
+      </div>
     </div>
   </div>
-
-  <!-- Chat Area -->
-  <div class="flex-1 flex flex-col">
-    <!-- Messages -->
-    <div class="flex-1 overflow-y-auto p-4 space-y-4">
-      @for (message of messages; track message.timestamp) {
-        <div class="flex" [ngClass]="{'justify-end': message.sender === 'user'}">
-          <div 
-            class="max-w-[70%] rounded-lg p-3"
-            [ngClass]="{
-              'bg-[#c12535] text-white': message.sender === 'assistant',
-              'bg-gray-100 text-[#233559]': message.sender === 'user'
-            }"
-          >
-            <p>{{ message.content }}</p>
-            <span class="text-xs opacity-75 mt-1 block">
-              {{ message.timestamp | date:'shortTime' }}
-            </span>
-          </div>
+  
+  <div class="chat-main">
+    <div class="chat-header">
+      <div class="chat-title" *ngIf="!editingTitle">
+        <h2>{{ currentSession?.title || 'New Chat' }}</h2>
+        <button class="edit-title-btn" (click)="startEditingTitle()" title="Edit title">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+          </svg>
+        </button>
+      </div>
+      <div class="chat-title-edit" *ngIf="editingTitle">
+        <input type="text" 
+               [(ngModel)]="editedTitle" 
+               (keyup.enter)="saveTitle()"
+               (keyup.escape)="cancelEditingTitle()"
+               placeholder="Enter chat title"
+               #titleInput>
+        <div class="edit-actions">
+          <button (click)="saveTitle()">Save</button>
+          <button (click)="cancelEditingTitle()">Cancel</button>
         </div>
-      }
-
-      @if (isLoading) {
-        <div class="flex justify-start">
-          <div class="bg-[#c12535] text-white rounded-lg p-3">
-            <div class="flex space-x-2">
-              <div class="w-2 h-2 bg-white rounded-full animate-bounce"></div>
-              <div class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-              <div class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
-            </div>
-          </div>
-        </div>
-      }
+      </div>
     </div>
 
-    <!-- Message Input -->
-    <div class="border-t border-gray-200 p-4">
-      <form (ngSubmit)="sendMessage()" class="flex gap-2">
-        <input 
-          type="text" 
-          [(ngModel)]="newMessage"
-          name="message"
-          placeholder="Type your message..." 
-          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#c12535] focus:border-[#c12535]"
-          [disabled]="isLoading"
-        />
-        <button 
-          type="submit"
-          class="bg-[#c12535] text-white px-6 py-2 rounded-lg hover:bg-[#a01e2c] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          [disabled]="isLoading || !newMessage.trim()"
-        >
-          Send
-        </button>
-      </form>
+    <div class="chat-messages" #messageContainer>
+      <div *ngFor="let message of messages" 
+           class="message" 
+           [class.user-message]="message.sender === 'user'"
+           [class.assistant-message]="message.sender === 'assistant'">
+        <div class="message-content">{{ message.content }}</div>
+        <div class="message-timestamp">{{ message.timestamp | date:'short' }}</div>
+      </div>
+      <div *ngIf="isLoading" class="loading-indicator">
+        <div class="typing-indicator">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="chat-input">
+      <input type="text" 
+             [(ngModel)]="newMessage" 
+             (keyup.enter)="sendMessage()"
+             placeholder="Type your message..."
+             [disabled]="isLoading">
+      <button (click)="sendMessage()" [disabled]="isLoading || !newMessage.trim()">Send</button>
     </div>
   </div>
 </div> 

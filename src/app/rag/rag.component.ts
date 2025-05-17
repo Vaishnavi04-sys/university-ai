@@ -49,7 +49,7 @@ export class RagComponent implements OnInit {
 
   fetchTempSession(): void {
     this.isLoading = true;
-    this.http.get<ChatSession>(`${environment.apiUrl}/university/chat/sessions/temp/?temp_session_id=${this.tempSessionId}`)
+    this.http.get<ChatSession>(`${environment.apiUrl}/university/chat/temp-session/current/?temp_session_id=${this.tempSessionId}`)
       .subscribe({
         next: (response) => {
           if (response && response.messages && response.messages.length > 0) {
@@ -87,7 +87,7 @@ export class RagComponent implements OnInit {
     
     this.userQuery = '';
     
-    this.http.post<ChatSession>(`${environment.apiUrl}/university/chat/sessions/send-message/`, payload)
+    this.http.post<ChatSession>(`${environment.apiUrl}/university/chat/temp-session/send-message/`, payload)
       .subscribe({
         next: (response) => {
           if (!this.tempSessionId && response.session_id) {

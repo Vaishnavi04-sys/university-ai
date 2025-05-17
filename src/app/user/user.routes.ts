@@ -14,10 +14,6 @@ export const routes: Routes = [
     loadComponent: () => import('./tasks/tasks.component').then(m => m.TasksComponent)
   },
   {
-    path: 'ar-assistant',
-    loadComponent: () => import('./ar-assistant/ar-assistant.component').then(m => m.ArAssistantComponent)
-  },
-  {
     path: '',
     redirectTo: 'dashboard',
     pathMatch: 'full'

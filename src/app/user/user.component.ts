@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
+import { UserAPIService } from './user.service';
+import { AuthenticatorService } from '../authenticator/authenticator.service';
 
 @Component({
   selector: 'app-user',
@@ -10,5 +12,30 @@ import { CommonModule } from '@angular/common';
   styleUrls: ['./user.component.css']
 })
 export class UserComponent {
-  // Component logic will be added as needed
+  showProfileModal = false;
+  
+  constructor(
+    public userAPIService: UserAPIService,
+    private authService: AuthenticatorService
+  ){}
+
+  ngOnInit(): void {
+    this.getCurrentUserData();
+  }
+
+  getCurrentUserData(){
+    this.userAPIService.getCurrentUser().subscribe(
+      (apiData) =>{
+        this.userAPIService.setCurrentUserData(apiData);
+      }
+    )
+  }
+
+  toggleProfileModal() {
+    this.showProfileModal = !this.showProfileModal;
+  }
+
+  logout() {
+    this.authService.logout();
+  }
 }
