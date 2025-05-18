@@ -63,6 +63,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
   
   private calculateUserLevel(cgpa: number): string {
+    console.log('Calculating user level for CGPA:', cgpa);
     if (cgpa >= 8.5) return 'Advanced';
     if (cgpa >= 7.0) return 'Medium';
     return 'Beginner';
@@ -82,9 +83,10 @@ export class DashboardComponent implements OnInit, OnDestroy {
     this.userName = userData.username;
     this.firstName = userData.first_name;
     this.lastName = userData.last_name;
-        if (userData.cgpa) {
-      this.userLevel = this.calculateUserLevel(userData.cgpa);
+        if (userData.experience) {
+        this.userLevel = this.calculateUserLevel(userData.experience);
     }
+    console.log('User level:', this.userLevel);
     // Parse enrollment info
     console.log('Attempting to parse username:', userData.username);
     this.userEnrollmentInfo = RegisterComponent.parseEnrollmentNumber(userData.username);
