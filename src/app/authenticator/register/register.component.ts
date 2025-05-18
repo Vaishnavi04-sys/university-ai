@@ -23,54 +23,60 @@ export class RegisterComponent {
     this.registerForm = new FormGroup({
       enrollmentNumber: new FormControl('',[
         Validators.required,
-        RegisterComponent.enrollmentNumberValidator
       ]),
       first_name: new FormControl('',[Validators.required]),
       last_name: new FormControl(''),
       email: new FormControl('', [Validators.required, Validators.email]),
+      cgpa: new FormControl('', [
+        Validators.required,
+        Validators.min(0),
+        Validators.max(10),
+        Validators.pattern('^[0-9]*\.?[0-9]+$')
+      ]),
     });
-  }
-
-  static enrollmentNumberValidator(control: AbstractControl): ValidationErrors | null {
-    // Format: YYEGXXX[A-Z][0-9]{2}
-    const regex = /^(\d{2})EG(\d{3})([A-Z])(\d{2})$/;
-    if (!control.value) return null;
-    return regex.test(control.value) ? null : { invalidEnrollment: true };
   }
 
   // Utility to parse enrollment number
   static parseEnrollmentNumber(enrollment: string) {
-    console.log('Parsing enrollment number:', enrollment);
-    // Convert to uppercase for consistent parsing
-    const upperEnrollment = enrollment.toUpperCase();
-    console.log('Converted to uppercase:', upperEnrollment);
-    const regex = /^(\d{2})EG(\d{3})([A-Z])(\d{2})$/i;  // Added 'i' flag for case-insensitive
-    const match = regex.exec(upperEnrollment);
-    console.log('Regex match result:', match);
-    if (!match) return null;
-    const year = parseInt(match[1], 10);
-    const fullYear = 2000 + year;
-    const duration = `${fullYear}-${fullYear + 4}`;
-    const branchCode = match[2];
-    const section = match[3];
-    const rollNo = match[4];
-    const branchMap: { [key: string]: string } = {
-      '112': 'Information Technology',
-      '104': 'Electronics & Communication',
-      '107': 'Artificial Intelligence',
-    };
-    const branch = branchMap[branchCode] || branchCode;
-    console.log({year, duration, branchCode, branch, section, rollNo});
-    return {
-      year: fullYear,
-      duration,
-      branchCode,
-      branch,
-      section,
-      rollNo: parseInt(rollNo, 10)
-    };
-  }
+  console.log('Parsing enrollment number:', enrollment);
 
+  // Extract just the enrollment part before '@' if it's an email
+  const username = enrollment.split('@')[0];
+  const upperEnrollment = username.toUpperCase();
+
+  console.log('Converted to uppercase:', upperEnrollment);
+
+  const regex = /^(\d{2})EG(\d{3})([A-Z])(\d{2})$/;
+  const match = regex.exec(upperEnrollment);
+
+  console.log('Regex match result:', match);
+  if (!match) return null;
+
+  const year = parseInt(match[1], 10);
+  const fullYear = 2000 + year;
+  const duration = `${fullYear}-${fullYear + 4}`;
+  const branchCode = match[2];
+  const section = match[3];
+  const rollNo = match[4];
+
+  const branchMap: { [key: string]: string } = {
+    '112': 'Information Technology',
+    '104': 'Electronics & Communication',
+    '107': 'Artificial Intelligence',
+  };
+  const branch = branchMap[branchCode] || branchCode;
+
+  console.log({ year, duration, branchCode, branch, section, rollNo });
+
+  return {
+    year: fullYear,
+    duration,
+    branchCode,
+    branch,
+    section,
+    rollNo: parseInt(rollNo, 10)
+  };
+}
   onSubmit() {
     if (this.registerForm.invalid) {
       this.message = 'Please enter a valid details.';
@@ -81,7 +87,8 @@ export class RegisterComponent {
     const user_name = this.registerForm.value.enrollmentNumber;
     const first_name = this.registerForm.value.first_name;
     const last_name = this.registerForm.value.last_name;
-    this.authSubscribe = this.authService.registerUser(user_name,first_name,last_name,email).subscribe(
+    const cgpa = this.registerForm.value.cgpa;
+    this.authSubscribe = this.authService.registerUser(user_name, first_name, last_name, email, cgpa).subscribe(
       (requestData) => {
         console.log(requestData);
         this.isLoading = false;

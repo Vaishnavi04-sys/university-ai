@@ -44,20 +44,20 @@ export class TutorComponent implements OnInit, OnDestroy {
       email: userData.email,
       role: userData.role || 'Student',
       enrollmentNumber: userData.username || 'Not specified',
+      cgpa: userData.experience || 'Not specified',
     };
     this.userEnrollmentInfo = RegisterComponent.parseEnrollmentNumber(userData.username);
     
-    // TODO: Update userLevel based on CGPA when available
-    // if (userData.cgpa) {
-    //   this.userLevel = this.calculateUserLevel(userData.cgpa);
-    // }
+    if (userData.cgpa) {
+      this.userLevel = this.calculateUserLevel(userData.cgpa);
+    }
   }
 
-  // private calculateUserLevel(cgpa: number): string {
-  //   if (cgpa >= 8.5) return 'advanced';
-  //   if (cgpa >= 7.0) return 'medium';
-  //   return 'beginner';
-  // }
+  private calculateUserLevel(cgpa: number): string {
+    if (cgpa >= 8.5) return 'advanced';
+    if (cgpa >= 7.0) return 'medium';
+    return 'beginner';
+  }
 
   ngOnInit() {
     this.subscription = this.userAPIService.currentUserData$.subscribe(data => {
@@ -79,7 +79,7 @@ export class TutorComponent implements OnInit, OnDestroy {
       return;
     }
 
-    if (!this.userDetails || !this.userEnrollmentInfo) {
+    if (!this.userDetails) {
       this.error = 'User details not available. Please try again.';
       return;
     }
@@ -87,16 +87,10 @@ export class TutorComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.error = null;
     
-    // Combine user details and enrollment info
-    const combinedUserInfo = {
-      ...this.userDetails,
-      enrollment_info: this.userEnrollmentInfo
-    };
-
     const params = new URLSearchParams({
       user_query: this.searchQuery,
       user_level: this.userLevel,
-      user_details: JSON.stringify(combinedUserInfo)
+      user_details: JSON.stringify(this.userDetails)
     });
 
     this.http.get<TutorResponse>(`${environment.apiUrl}/university/tutor/?${params.toString()}`)

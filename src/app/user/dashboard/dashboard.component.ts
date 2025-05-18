@@ -20,6 +20,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   firstName: string = '';
   lastName: string = '';
   userEnrollmentInfo: any = null;
+  userLevel: string = 'Medium';
   private subscription: Subscription = new Subscription();
 
   private morningGreetings = [
@@ -60,6 +61,12 @@ export class DashboardComponent implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.subscription.unsubscribe();
   }
+  
+  private calculateUserLevel(cgpa: number): string {
+    if (cgpa >= 8.5) return 'Advanced';
+    if (cgpa >= 7.0) return 'Medium';
+    return 'Beginner';
+  }
 
   private fetchUserDetails(userData: any) {
     console.log('User data received:', userData);
@@ -70,10 +77,14 @@ export class DashboardComponent implements OnInit, OnDestroy {
       email: userData.email,
       role: userData.role || 'Student',
       enrollmentNumber: userData.username || 'Not specified',
+      cgpa: userData.experience || 'Not specified',
     };
     this.userName = userData.username;
     this.firstName = userData.first_name;
     this.lastName = userData.last_name;
+        if (userData.cgpa) {
+      this.userLevel = this.calculateUserLevel(userData.cgpa);
+    }
     // Parse enrollment info
     console.log('Attempting to parse username:', userData.username);
     this.userEnrollmentInfo = RegisterComponent.parseEnrollmentNumber(userData.username);

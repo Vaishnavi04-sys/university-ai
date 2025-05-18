@@ -24,12 +24,13 @@ export class AuthenticatorService {
   }
 
 
-  registerUser(user_name: string, first_name: string, last_name: string, email: string): Observable<any> {
+  registerUser(user_name: string, first_name: string, last_name: string, email: string, cgpa: string): Observable<any> {
       return this.httpClient.post(this.apiUrl + 'auth/user/register/', {
-          user_name: user_name,
+          username: user_name,
           first_name: first_name,
           last_name: last_name,
-          email: email
+          email: email,
+          experience: cgpa
       });
   }
 
