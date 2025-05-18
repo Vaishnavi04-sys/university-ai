@@ -1,6 +1,20 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+import { Subscription } from 'rxjs';
+import { UserAPIService } from '../user.service';
+import { RegisterComponent } from '../../authenticator/register/register.component';
+
+interface TutorResponse {
+  description: string;
+  steps: {
+    step_name: string;
+    step_descripion: string;
+  }[];
+  link: string;
+}
 
 @Component({
   selector: 'app-tutor',
@@ -9,39 +23,93 @@ import { FormsModule } from '@angular/forms';
   templateUrl: './tutor.component.html',
   styleUrl: './tutor.component.css'
 })
-export class TutorComponent {
+export class TutorComponent implements OnInit, OnDestroy {
   searchQuery: string = '';
   isLoading: boolean = false;
-  searchResults: any = null;
+  searchResults: TutorResponse | null = null;
+  error: string | null = null;
+  userDetails: any | null = null;
+  private subscription: Subscription = new Subscription();
+  userLevel: string = 'medium';
+  userEnrollmentInfo: any = null;
 
-  // Placeholder data structure for backend integration
-  mockData = {
-    syllabusLink: 'https://example.com/syllabus.pdf',
-    steps: [
-      {
-        title: 'Introduction to Topic',
-        description: 'Start with the basic concepts and definitions',
-        resources: ['Video Lecture', 'Reading Material']
-      },
-      {
-        title: 'Core Concepts',
-        description: 'Deep dive into the main principles',
-        resources: ['Practice Problems', 'Interactive Examples']
-      },
-      {
-        title: 'Advanced Topics',
-        description: 'Explore advanced concepts and applications',
-        resources: ['Case Studies', 'Research Papers']
+  constructor(private http: HttpClient, private userAPIService: UserAPIService) {}
+
+  private fetchUserDetails(userData: any) {
+    console.log('User data received:', userData);
+    this.userDetails = {
+      name: userData.username,
+      first_name: userData.first_name || 'Not specified',
+      last_name: userData.last_name || '',
+      email: userData.email,
+      role: userData.role || 'Student',
+      enrollmentNumber: userData.username || 'Not specified',
+    };
+    this.userEnrollmentInfo = RegisterComponent.parseEnrollmentNumber(userData.username);
+    
+    // TODO: Update userLevel based on CGPA when available
+    // if (userData.cgpa) {
+    //   this.userLevel = this.calculateUserLevel(userData.cgpa);
+    // }
+  }
+
+  // private calculateUserLevel(cgpa: number): string {
+  //   if (cgpa >= 8.5) return 'advanced';
+  //   if (cgpa >= 7.0) return 'medium';
+  //   return 'beginner';
+  // }
+
+  ngOnInit() {
+    this.subscription = this.userAPIService.currentUserData$.subscribe(data => {
+      if (data) {
+        this.fetchUserDetails(data);
       }
-    ]
-  };
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+    }
+  }
 
   onSearch() {
+    if (!this.searchQuery.trim()) {
+      this.error = 'Please enter a search query';
+      return;
+    }
+
+    if (!this.userDetails || !this.userEnrollmentInfo) {
+      this.error = 'User details not available. Please try again.';
+      return;
+    }
+
     this.isLoading = true;
-    // TODO: Implement backend API call
-    setTimeout(() => {
-      this.searchResults = this.mockData;
-      this.isLoading = false;
-    }, 1000);
+    this.error = null;
+    
+    // Combine user details and enrollment info
+    const combinedUserInfo = {
+      ...this.userDetails,
+      enrollment_info: this.userEnrollmentInfo
+    };
+
+    const params = new URLSearchParams({
+      user_query: this.searchQuery,
+      user_level: this.userLevel,
+      user_details: JSON.stringify(combinedUserInfo)
+    });
+
+    this.http.get<TutorResponse>(`${environment.apiUrl}/university/tutor/?${params.toString()}`)
+      .subscribe({
+        next: (response) => {
+          this.searchResults = response;
+          this.isLoading = false;
+        },
+        error: (err) => {
+          this.error = 'Failed to fetch results. Please try again.';
+          this.isLoading = false;
+          console.error('Error fetching tutor data:', err);
+        }
+      });
   }
 }

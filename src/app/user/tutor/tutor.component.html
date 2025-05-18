@@ -24,15 +24,25 @@
         <span *ngIf="isLoading">Searching...</span>
       </button>
     </div>
+    <!-- Error Message -->
+    <div *ngIf="error" class="mt-4 text-red-600 text-center">
+      {{error}}
+    </div>
   </div>
 
   <!-- Results Section -->
   <div *ngIf="searchResults" class="max-w-4xl mx-auto">
+    <!-- Description -->
+    <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
+      <h2 class="text-2xl font-semibold text-gray-900 mb-4">Overview</h2>
+      <p class="text-gray-600">{{searchResults.description}}</p>
+    </div>
+
     <!-- Syllabus Link -->
     <div class="bg-white rounded-xl shadow-sm p-6 mb-8">
       <h2 class="text-2xl font-semibold text-gray-900 mb-4">Syllabus</h2>
       <a
-        [href]="searchResults.syllabusLink"
+        [href]="searchResults.link"
         target="_blank"
         class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all"
       >
@@ -52,13 +62,8 @@
             {{i + 1}}
           </div>
           <div class="flex-1">
-            <h3 class="text-xl font-semibold text-gray-900 mb-2">{{step.title}}</h3>
-            <p class="text-gray-600 mb-4">{{step.description}}</p>
-            <div class="flex flex-wrap gap-2">
-              <span *ngFor="let resource of step.resources" class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
-                {{resource}}
-              </span>
-            </div>
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">{{step.step_name}}</h3>
+            <p class="text-gray-600">{{step.step_descripion}}</p>
           </div>
         </div>
       </div>
@@ -66,7 +71,7 @@
   </div>
 
   <!-- Empty State -->
-  <div *ngIf="!searchResults && !isLoading" class="max-w-2xl mx-auto text-center text-gray-500">
+  <div *ngIf="!searchResults && !isLoading && !error" class="max-w-2xl mx-auto text-center text-gray-500">
     <p>Enter a topic to get started with your learning journey</p>
   </div>
 </div>
