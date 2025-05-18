@@ -48,8 +48,8 @@ export class TutorComponent implements OnInit, OnDestroy {
     };
     this.userEnrollmentInfo = RegisterComponent.parseEnrollmentNumber(userData.username);
     
-    if (userData.cgpa) {
-      this.userLevel = this.calculateUserLevel(userData.cgpa);
+    if (userData.experience) {
+      this.userLevel = this.calculateUserLevel(userData.experience);
     }
   }
 

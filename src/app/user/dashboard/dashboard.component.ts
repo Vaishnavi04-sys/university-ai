@@ -86,8 +86,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
         if (userData.experience) {
         this.userLevel = this.calculateUserLevel(userData.experience);
     }
-    console.log('User level:', this.userLevel);
-    // Parse enrollment info
     console.log('Attempting to parse username:', userData.username);
     this.userEnrollmentInfo = RegisterComponent.parseEnrollmentNumber(userData.username);
     console.log('Parsed enrollment info:', this.userEnrollmentInfo);
